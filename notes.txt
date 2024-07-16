@@ -1,0 +1,230 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--neutral-cream);
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+:root {
+  --primary-gold: #FFD700;
+  --neutral-white: #FFFFFF;
+  --neutral-black: #000000;
+  --neutral-dark-gray: #333333;
+  --complementary-navy-blue: #000080;
+  --accent-deep-purple: #4B0082;
+  --complementary-emerald-green: #50C878;
+  --neutral-cream: #FFFDD0;
+  --accent-burgundy: #800020;
+  --neutral-champagne: #F7E7CE;
+}
+
+tbody tr:nth-child(odd) {
+  background-color: var(--neutral-champagne);
+}
+
+tbody tr:nth-child(even) {
+  background-color: var(--neutral-white);
+}
+
+.navbar {
+  background-color: var(--complementary-navy-blue);
+  box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+}
+
+.logo {
+  color: var(--primary-gold);
+}
+
+.search-input {
+  background-color: var(--neutral-white);
+  border: 1px solid var(--neutral-dark-gray);
+  color: var(--neutral-black);
+}
+
+.btn-gold {
+  background-color: var(--primary-gold) !important;
+  color: var(--neutral-black) !important;
+}
+
+.btn-emerald {
+  background-color: var(--complementary-emerald-green);
+  color: var(--neutral-white);
+}
+
+.search-input {
+  width: auto;
+}
+
+.input-group {
+  margin-left: 
+10px;
+}
+
+.navbar-brand {
+margin-top: -8px;
+}
+
+.brand-text {
+font-size: 12px !important;
+text-decoration: none;
+}
+
+.table-responsive {
+width: 100%;
+overflow-x: auto;
+}
+
+.table {
+width: 100%;
+border-collapse: separate;
+border-spacing: 0 10px;
+text-align: center;
+background-color: #f9f9f9;
+border: 1px solid #ddd;
+}
+
+#table-header {
+background-color: var(--neutral-cream) !important;
+}
+
+th, td {
+padding: 12px 15px;
+border-left: 1px solid #ddd !important;
+}
+
+th
+, td
+{
+border-left: none;
+}
+
+.list-inline-item i {
+color: var(--primary-gold);
+}
+
+.btn-gold
+{
+color: var(--neutral-dark-gray) !important;
+background-color: #f9cf007d !important;
+}
+  tbody tr:nth-child(odd) {
+    background-color: var(--neutral-champagne);
+  }
+  tbody tr:nth-child(even) {
+    background-color: var(--neutral-white);
+  }
+    #table-header {
+    background-color: var(--neutral-cream) !important;
+  }
+
+
+
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import Navbar from '../Navbar/Navbar';
+import { Helmet } from 'react-helmet';
+import Chart from '../Chart/Chart';
+
+export default function Home() {
+  const [customers, setCustomers] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [combinedData, setCombinedData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+
+  useEffect(() => {
+    axios.get('http://localhost:3000/customers')
+      .then(response => {
+        console.log('Fetched customers:', response.data);
+        setCustomers(response.data);
+      })
+      .catch(error => console.error('Error fetching customers:', error));
+
+    axios.get('http://localhost:3000/transactions')
+      .then(response => {
+        console.log('Fetched transactions:', response.data);
+        setTransactions(response.data);
+      })
+      .catch(error => console.error('Error fetching transactions:', error));
+  }, []);
+
+  useEffect(() => {
+    if (customers.length && transactions.length) {
+      const combined = customers.map(customer => ({
+        ...customer,
+        transactions: transactions.filter(transaction => transaction.customer_id === customer.id)
+      }));
+      setCombinedData(combined);
+      setFilteredData(combined);
+      console.log(combined);
+    }
+  }, [customers, transactions]);
+
+  const searchByCustomerName = (customerName) => {
+    const filtered = combinedData.filter(customer => {
+      return customer.name.toLowerCase().includes(customerName.toLowerCase());
+    });
+    setFilteredData(filtered);
+  };
+
+  const searchByAmount = (amount) => {
+    const filtered = combinedData.map(customer => ({
+      ...customer,
+      transactions: customer.transactions.filter(transaction => transaction.amount === parseInt(amount))
+    })).filter(customer => customer.transactions.length > 0);
+    setFilteredData(filtered);
+  };
+  const handleReset = () => {
+    setFilteredData(combinedData);
+  };
+
+  return (
+    <>
+      <Helmet>
+        <meta charSet="utf-8" />
+        <title>Datasphere</title>
+        <link rel="shortcut icon" href="/goldfavicon.png" type="image/x-icon" />
+      </Helmet>
+      <Navbar onSearchCustomer={searchByCustomerName} onReset={handleReset} onSearchAmount={searchByAmount} />
+      <h1 className='text-center mt-4 h5'>Customer Transactions</h1>
+      <div className="container my-5 d-flex align-items-center justify-content-center">
+        <div className="table-responsive">
+          <table className="table">
+            <thead id='table-header' className='table-header'>
+              <tr>
+                <th>Customer ID</th>
+                <th>Customer Name</th>
+                <th>Transaction ID</th>
+                <th>Date</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredData.map(customer => (
+                customer.transactions.map(transaction => (
+                  <tr key={transaction.id}>
+                    <td>{customer.id}</td>
+                    <td>{customer.name}</td>
+                    <td>{transaction.id}</td>
+                    <td>{transaction.date}</td>
+                    <td>{transaction.amount}</td>
+                  </tr>
+                ))
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {filteredData.length === 1 && filteredData[0].transactions.length > 0 && (
+        <Chart transactions={filteredData[0].transactions} />
+      )}
+    </>
+  );
+}
